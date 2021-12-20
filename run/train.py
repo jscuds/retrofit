@@ -12,15 +12,15 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--lr', type=float, default=0.001, help="set learning rate")
-parser.add_argument('--batch_size', type=int, default=256, help="set batch size")
+parser.add_argument('--batch_size', type=int, default=256, help="set batch size")        #js why so big?
 parser.add_argument('--epochs', type=int, default=100, help="set epoch")
-parser.add_argument('--r1', type=int, default=0.5, help="negative samples ratio: 0-1")
+parser.add_argument('--r1', type=int, default=0.5, help="negative samples ratio: 0-1")   #js what does this mean?
 parser.add_argument('--save_freq', type=int, default=2)
 parser.add_argument('--sentence_length', type=int, default=40)
 parser.add_argument('--dim', type=int, default=128, help="set dimension")
 parser.add_argument('--model_sav_path', type=str, default = "./save_model/model.bin", help = "model save path")
 parser.add_argument('--data_sav_path', type=str, default = "./save_model/data.bin", help = "data save path")
-parser.add_argument('--margin', type=int, default = 4)
+parser.add_argument('--margin', type=int, default = 4)          #js m1 in code; \gamma in paper
 parser.add_argument('--lambda1', type=int, default = 1, help = "orthogonal matrix")
 parser.add_argument('--lambda2', type=int, default = 0)
 parser.add_argument('--lambda3', type=int, default = 0)

@@ -56,17 +56,17 @@ class TFParts(object):
         with h5py.File(self.token_embedding_file, 'r') as fin:
             _n_tokens_vocab = fin['embedding'].shape[0] + 1
             embed_weights = fin['embedding'][...]
-            weights = np.zeros((embed_weights.shape[0] + 1, embed_weights.shape[1]), dtype='float32')
+            weights = np.zeros((embed_weights.shape[0] + 1, embed_weights.shape[1]), dtype='float32') #js added 1 for UNK or bias term??
             weights[1:, :] = embed_weights
             print("model-load: weights")
 
         tf.reset_default_graph()
         # with tf.variable_scope("graph"):
             # Variables (matrix of embeddings/transformations)
-        self._M1 = M1 = tf.get_variable(
+        self._M1 = M1 = tf.get_variable(                    #js dim x dim == 128x128
             name='M1',
             dtype=tf.float32,
-            initializer = tf.eye(self._dim, dtype="float32"),
+            initializer = tf.eye(self._dim, dtype="float32"), 
             trainable = True,
             # shape=[self.dim, self.dim],
             # initializer=tf.initializers.orthogonal(dtype="float32")
@@ -84,15 +84,15 @@ class TFParts(object):
         #     # initializer=tf.initializers.orthogonal(dtype="float32")
         # )
         print("_n_tokens_vocab",_n_tokens_vocab)
-        self.embedding_table = embedding_table = tf.get_variable(
+        self.embedding_table = embedding_table = tf.get_variable(       #js num_tokens x dim == ?? x128
             name='embedding_table',
             shape=[_n_tokens_vocab, self.dim],
             initializer=tf.constant_initializer(weights),
             trainable=False,
             dtype=tf.float32)
 
-        self._sent1 = sent1 = tf.placeholder(
-            dtype=tf.int64,
+        self._sent1 = sent1 = tf.placeholder(                           #js batch x length == 1024 x 30
+            dtype=tf.int64,                                             #   applies to all below
             shape=[self._batch_sizeK, self._length],
             name='sent1')
         self._sent2 = sent2 = tf.placeholder(
@@ -108,8 +108,8 @@ class TFParts(object):
             shape=[self._batch_sizeK, self._length],
             name='nsent2')
 
-        self._token1 = token1 = tf.placeholder(
-            dtype=tf.int64,
+        self._token1 = token1 = tf.placeholder(                           #js shape: batch == 1024
+            dtype=tf.int64,                                               #   applies to all below
             shape=[self._batch_sizeK],
             name='token1')
         self._token2 = token2 = tf.placeholder(
@@ -128,6 +128,11 @@ class TFParts(object):
 
 
         # 1. Look up embeddings of training cases and negative cases, go through M1, go through bilm, and calculate hinge loss.
+        # js sent#_emb: shape == (batch_sizek x length x dim) == (1024 x 30 x 128) 
+        # js INTERMEDIATE RESHAPE sent#_emb_transform: shape == (30720 x 128)
+        # js FINAL sent#_emb_transform: shape == (batch_sizek x length x dim)  to (1024 x 30 x 128) 
+
+
         sent1_emb = tf.nn.embedding_lookup(embedding_table, sent1)  # [s1:[[w1],[w2]...],s2:[[w1],[w2]...]]
         sent2_emb = tf.nn.embedding_lookup(embedding_table, sent2)
         nsent1_emb = tf.nn.embedding_lookup(embedding_table, nsent1) #[s1:[[w1],[w2]...],s2:[[w1],[w2]...]]
@@ -150,7 +155,13 @@ class TFParts(object):
 
         print("----")
         # run through bilm
-        sent1_emb_context = self._bilm(sent1, sent1_emb_transform)
+        #js sent1_emb_context is a dictionary of tensorflow ops: reference bilm/model.py/BidirectionalLanguageModel.__call__()
+        #   dict_keys(['lm_embeddings', 'lengths', 'mask'])
+        #   **WHY DO THEY PASS IN SENT1 AND SENT1_EMB_TRANSFORM??  ESPECIALLY WHEN BILM ONLY SEEMS TO TAKE 1 INPUT...
+        #   sent#: shape == (batch_sizeK x length) == (1024 x 30)
+
+
+        sent1_emb_context = self._bilm(sent1, sent1_emb_transform) 
         with tf.variable_scope('', reuse=True):
             sent2_emb_context = self._bilm(sent2, sent2_emb_transform)
         # dim x 2
@@ -196,6 +207,7 @@ class TFParts(object):
         ntoken1_emb = tf.gather_nd(nsent1_emb_context_output,ntoken1) #[[emb1], [emb2], ..... ]
         ntoken2_emb = tf.gather_nd(nsent2_emb_context_output,ntoken2)
 
+        # js --? Seems like next two lines are useless...
         self.token1_emb = token1_emb
         self.sent1_emb_context_output = sent1_emb_context_output
 

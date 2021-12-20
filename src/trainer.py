@@ -69,6 +69,7 @@ class Trainer(object):
                 if batch.shape[0] < self.batch_sizeK:
                     batch = np.concatenate((batch, self.data.para_tuples[:self.batch_sizeK - batch.shape[0]]), axis=0)
                     assert batch.shape[0] == self.batch_sizeK
+                    
                 #get negative samples, or corrupt a batch of positive cases data.corrupt_batch(batch)
                 neg_batch = []
                 for tuple in batch:
@@ -76,7 +77,7 @@ class Trainer(object):
                     # neg_tuple = random.choice(self.data.neg_tuples)
                     # neg_batch.append(neg_tuple)
                     neg = data.neg(tuple)
-                    if (random.uniform(0, 1) < r1) and (neg is not None):
+                    if (random.uniform(0, 1) < r1) and (neg is not None):   #js r1 is a negative samples ratio, between 0-1; default r1 = 0.5
                         # append a given negative case, or if None, corrupt
                         neg_batch.append(neg)
                     else:
